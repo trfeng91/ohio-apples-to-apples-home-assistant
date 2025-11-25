@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Select Utility Type",
+        "description": "Welcome! Let's start by choosing which type of energy you want to track.",
+        "data": {
+          "category": "Energy Type"
+        }
+      },
+      "provider": {
+        "title": "Select Your Provider",
+        "description": "We found the following providers for your area. Please select the one that services your home.",
+        "data": {
+          "territory_id": "Utility Provider"
+        }
+      },
+      "filters": {
+        "title": "Filter Rates",
+        "description": "Configure your preferences. Leave numeric fields BLANK to disable that filter.",
+        "data": {
+          "refresh_interval": "Update Frequency (Hours)",
+          "rate_type": "Rate Structure",
+          "term_min": "Minimum Contract Length (Months)",
+          "term_max": "Maximum Contract Length (Months)",
+          "price_max": "Maximum Price ($/kWh or $/ccf)"
+        }
+      }
+    },
+    "error": {
+      "cannot_fetch_providers": "Could not fetch provider list. Check internet."
+    },
+    "abort": {
+      "already_configured": "This provider is already configured."
+    }
+  }
+}

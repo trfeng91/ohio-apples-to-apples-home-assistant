@@ -1,0 +1,10 @@
+{
+  "domain": "ohio_apples_energy",
+  "name": "Ohio Apples to Apples Energy",
+  "codeowners": ["@trfeng91"],
+  "config_flow": true,
+  "documentation": "https://github.com/trfeng91/ohio-apples-to-apples-home-assistant",
+  "requirements": ["beautifulsoup4>=4.0.0"],
+  "iot_class": "cloud_polling",
+  "version": "1.0.0"
+}
