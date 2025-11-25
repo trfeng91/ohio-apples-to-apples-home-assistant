@@ -1,0 +1,28 @@
+type: markdown
+content: |
+  # ⚡ Energy Savings Analysis
+
+  ---
+
+  ## 🔥 Natural Gas
+  
+  | Compare | Rate / Term | Monthly Impact* |
+  | :--- | :--- | :--- |
+  | **My Contract** | **${{ states('input_number.my_gas_rate') }}** | — |
+  | **Utility Std** | ${{ states('sensor.columbia_gas_of_ohio_naturalgas_standard_offer') }} <br> _(Variable)_ | {% set savings = (states('input_number.my_gas_rate')|float(0) - states('sensor.columbia_gas_of_ohio_naturalgas_standard_offer')|float(0)) * 100 %} {% if savings >= 0 %} <font color="green">**${{ '%.2f' | format(savings) }}**</font> {% else %} <font color="red">**${{ '%.2f' | format(savings) }}**</font> {% endif %} |
+  | **Best No-Fee** | **${{ states('sensor.columbia_gas_of_ohio_naturalgas_best_rate_no_fees') }}** <br> _({{ state_attr('sensor.columbia_gas_of_ohio_naturalgas_best_rate_no_fees', 'term_length') }})_ | {% set savings = (states('input_number.my_gas_rate')|float(0) - states('sensor.columbia_gas_of_ohio_naturalgas_best_rate_no_fees')|float(0)) * 100 %} {% if savings >= 0 %} <font color="green">**${{ '%.2f' | format(savings) }}**</font> {% else %} <font color="red">**${{ '%.2f' | format(savings) }}**</font> {% endif %} |
+  
+  _<small> *Savings if you switch (based on 100 ccf/mo) </small>_
+
+  ---
+
+  ## ⚡ Electricity
+  
+  | Compare | Rate / Term | Monthly Impact* |
+  | :--- | :--- | :--- |
+  | **My Contract** | **${{ states('input_number.my_electric_rate') }}** | — |
+  | **Utility Std** | ${{ states('sensor.american_electric_power_electric_standard_offer') }} <br> _(Variable)_ | {% set savings = (states('input_number.my_electric_rate')|float(0) - states('sensor.american_electric_power_electric_standard_offer')|float(0)) * 1000 %} {% if savings >= 0 %} <font color="green">**${{ '%.2f' | format(savings) }}**</font> {% else %} <font color="red">**${{ '%.2f' | format(savings) }}**</font> {% endif %} |
+  | **Best No-Fee** | **${{ states('sensor.american_electric_power_electric_best_rate_no_fees') }}** <br> _({{ state_attr('sensor.american_electric_power_electric_best_rate_no_fees', 'term_length') }})_ | {% set savings = (states('input_number.my_electric_rate')|float(0) - states('sensor.american_electric_power_electric_best_rate_no_fees')|float(0)) * 1000 %} {% if savings >= 0 %} <font color="green">**${{ '%.2f' | format(savings) }}**</font> {% else %} <font color="red">**${{ '%.2f' | format(savings) }}**</font> {% endif %} |
+
+  _<small> *Savings if you switch (based on 1000 kWh/mo) </small>_
+title: Savings Calculator

@@ -1,176 +1,101 @@
-Ohio Apples to Apples Energy Monitor
+# **Ohio Apples to Apples Energy Monitor**
 
-A custom integration for Home Assistant that tracks electricity and natural gas rates from the official Energy Choice Ohio (Apples to Apples) website.
+A custom integration for **Home Assistant** that tracks electricity and natural gas rates from the official [Energy Choice Ohio (Apples to Apples)](https://www.energychoice.ohio.gov) website.
 
-This integration scrapes current offers based on your specific utility provider and allows you to compare them against your current contract and the utility's Standard Choice Offer (SCO) / Price to Compare.
+This integration scrapes current offers based on your specific utility provider and allows you to compare them against your current contract and the utility's **Standard Choice Offer (SCO)** / Price to Compare.
 
-✨ Features
+## **✨ Features**
 
-Dual Support: Tracks both Electric and Natural Gas providers.
+* **Dual Support:** Tracks both **Electric** and **Natural Gas** providers.  
+* **Smart Scraping:** Automatically fetches the **Standard Offer (Price to Compare)** directly from the utility page header.  
+* **Granular Sensors:** Creates sensors for:  
+  * 🏆 **Best Overall Rate:** The absolute lowest price found.  
+  * 🚫 **Best "No Fee" Rate:** The lowest price with $0 monthly fees, $0 early termination fees, and no intro rate.  
+  * 📅 **Term-Specific Rates:** Best rates for **1, 2, 3, 6, 9, 12, 18, 24, 36, 48, and 60-month** contracts.  
+  * 🔢 **Matching Offers:** Counts how many plans match your filters.  
+* **Rich Attributes:** Sensors include Supplier Name, Rate Type (Fixed/Variable), Monthly Fees, and Early Termination Fees.  
+* **Configurable Filters:** Filter out variable rates, short-term contracts, or high-fee plans during setup.
 
-Smart Scraping: Automatically fetches the Standard Offer (Price to Compare) directly from the utility page header.
+## **📥 Installation**
 
-Granular Sensors: Creates sensors for:
+### **Option 1: HACS (Recommended)**
 
-🏆 Best Overall Rate: The absolute lowest price found.
+1. Go to **HACS** \> **Integrations**.  
+2. Click the three dots in the top right corner and select **Custom repositories**.  
+3. Paste the URL of this repository and select **Integration**.  
+4. Click **Install**.  
+5. Restart Home Assistant.
 
-🚫 Best "No Fee" Rate: The lowest price with $0 monthly fees, $0 early termination fees, and no intro rate.
+### **Option 2: Manual**
 
-📅 Term-Specific Rates: Best rates for 1, 2, 3, 6, 9, 12, 18, 24, 36, 48, and 60-month contracts.
+1. Download the ohio\_apples\_energy folder from this repository.  
+2. Copy the folder into your Home Assistant config/custom\_components/ directory.  
+3. Restart Home Assistant.
 
-🔢 Matching Offers: Counts how many plans match your filters.
+## **⚙️ Configuration**
 
-Rich Attributes: Sensors include Supplier Name, Rate Type (Fixed/Variable), Monthly Fees, and Early Termination Fees.
+1. Go to **Settings** \> **Devices & Services**.  
+2. Click **\+ Add Integration**.  
+3. Search for **Ohio Apples to Apples Energy**.  
+4. **Step 1:** Select your utility category (**Electric** or **NaturalGas**).  
+5. **Step 2:** Select your specific Utility Provider (e.g., *AEP Ohio*, *Columbia Gas*).  
+6. **Step 3:** Configure your filters (Optional):  
+   * *Refresh Interval:* How often to scrape (default: 12 hours).  
+   * *Rate Type:* Filter for "Fixed" only.  
+   * *Term Min/Max:* Filter contract lengths.
 
-Configurable Filters: Filter out variable rates, short-term contracts, or high-fee plans during setup.
+**Note:** You can add the integration twice to track both Gas and Electric simultaneously.
 
-📥 Installation
+## **📊 Dashboard Card**
 
-Option 1: HACS (Recommended)
+To visualize your savings like a pro, follow these two steps to set up the custom Savings Calculator card.
 
-Go to HACS > Integrations.
+### **Step 1: Create Price Helpers (Required)**
 
-Click the three dots in the top right corner and select Custom repositories.
+For the card to calculate savings, it needs to know your *current* contract price. You will create two "Input Number" helpers for this.
 
-Paste the URL of this repository and select Integration.
+1. Go to **Settings** \> **Devices & Services** \> **Helpers**.  
+2. Click **\+ Create Helper** and select **Number**.  
+3. **Create the Gas Helper:**  
+   * **Name:** My Gas Rate  
+   * **Entity ID:** input\_number.my\_gas\_rate  
+   * **Unit of Measurement:** $/ccf  
+   * **Mode:** Box  
+4. **Create the Electric Helper:**  
+   * **Name:** My Electric Rate  
+   * **Entity ID:** input\_number.my\_electric\_rate  
+   * **Unit of Measurement:** $/kWh  
+   * **Mode:** Box
 
-Click Install.
+### **Step 2: Add the Card**
 
-Restart Home Assistant.
+1. Open the card configuration file: [**energy\_savings\_card.txt**](https://www.google.com/search?q=card/energy_savings_card.txt)  
+2. Copy all the code inside that file.  
+3. In Home Assistant, go to your Dashboard and click the **Pencil Icon** (Edit Dashboard).  
+4. Click **\+ Add Card**.  
+5. Scroll down to the bottom and select **Manual**.  
+6. Delete the default code and **paste the code you copied**.  
+7. Click **Save**.
 
-Option 2: Manual
+*\> **Note:** If the card shows errors, check that your sensor entity IDs match those in the code. They may vary slightly based on the Utility Provider you selected during setup.*
 
-Download the ohio_apples_energy folder from this repository.
+## **🔔 Automation Example**
 
-Copy the folder into your Home Assistant config/custom_components/ directory.
+Receive a notification on your phone whenever a "No-Fee" plan appears that is cheaper than your current contract.
 
-Restart Home Assistant.
+1. Open the automation configuration file: [**energy\_savings\_alert.txt**](https://www.google.com/search?q=card/energy_savings_alert.txt)  
+2. Copy all the code inside that file.  
+3. In Home Assistant, go to **Settings** \> **Automations & Scenes**.  
+4. Click **\+ Create Automation** \> **Create new automation**.  
+5. Click the **three dots** in the top right corner and select **Edit in YAML**.  
+6. Delete the existing code and **paste the code you copied**.  
+7. Click **Save**.
 
-⚙️ Configuration
+## **⚠️ Disclaimer**
 
-Go to Settings > Devices & Services.
+This integration is not affiliated with the Public Utilities Commission of Ohio (PUCO). It scrapes data from the public energychoice.ohio.gov website. While efforts are made to ensure accuracy, always verify rates on the official website of the energy provider before signing a contract.
 
-Click + Add Integration.
-
-Search for Ohio Apples to Apples Energy.
-
-Step 1: Select your utility category (Electric or NaturalGas).
-
-Step 2: Select your specific Utility Provider (e.g., AEP Ohio, Columbia Gas).
-
-Step 3: Configure your filters (Optional):
-
-Refresh Interval: How often to scrape (default: 12 hours).
-
-Rate Type: Filter for "Fixed" only.
-
-Term Min/Max: Filter contract lengths.
-
-Note: You can add the integration twice to track both Gas and Electric simultaneously.
-
-📊 Dashboard Card
-
-To visualize your savings, you must set up the input helpers and then add the card configuration.
-
-1. Create Price Helpers (Required)
-
-For the dashboard card to calculate your savings, you must create two "Input Number" helpers where you will enter your current contract rates.
-
-Go to Settings > Devices & Services > Helpers.
-
-Click + Create Helper and select Number.
-
-Create the Gas helper:
-
-Name: My Gas Rate
-
-Entity ID: input_number.my_gas_rate
-
-Unit of Measurement: $/ccf
-
-Click + Create Helper again for the Electric helper:
-
-Name: My Electric Rate
-
-Entity ID: input_number.my_electric_rate
-
-Unit of Measurement: $/kWh
-
-2. Add Card to Dashboard
-
-Add a Markdown card to your dashboard and paste this YAML. It will automatically color-code savings in Green and losses in Red.
-
-{% raw %}
-
-type: markdown
-content: |
-  # ⚡ Energy Savings Analysis
-
-  ---
-
-  ## 🔥 Natural Gas
-  
-  | Compare | Rate / Term | Monthly Impact* |
-  | :--- | :--- | :--- |
-  | **My Contract** | **${{ states('input_number.my_gas_rate') }}** | — |
-  | **Utility Std** | ${{ states('sensor.columbia_gas_of_ohio_naturalgas_standard_offer') }} <br> _(Variable)_ | {% set savings = (states('input_number.my_gas_rate')|float(0) - states('sensor.columbia_gas_of_ohio_naturalgas_standard_offer')|float(0)) * 100 %} {% if savings >= 0 %} <font color="green">**${{ '%.2f' | format(savings) }}**</font> {% else %} <font color="red">**${{ '%.2f' | format(savings) }}**</font> {% endif %} |
-  | **Best No-Fee** | **${{ states('sensor.columbia_gas_of_ohio_naturalgas_best_rate_no_fees') }}** <br> _({{ state_attr('sensor.columbia_gas_of_ohio_naturalgas_best_rate_no_fees', 'term_length') }})_ | {% set savings = (states('input_number.my_gas_rate')|float(0) - states('sensor.columbia_gas_of_ohio_naturalgas_best_rate_no_fees')|float(0)) * 100 %} {% if savings >= 0 %} <font color="green">**${{ '%.2f' | format(savings) }}**</font> {% else %} <font color="red">**${{ '%.2f' | format(savings) }}**</font> {% endif %} |
-  
-  _<small> *Savings if you switch (based on 100 ccf/mo) </small>_
-
-  ---
-
-  ## ⚡ Electricity
-  
-  | Compare | Rate / Term | Monthly Impact* |
-  | :--- | :--- | :--- |
-  | **My Contract** | **${{ states('input_number.my_electric_rate') }}** | — |
-  | **Utility Std** | ${{ states('sensor.american_electric_power_electric_standard_offer') }} <br> _(Variable)_ | {% set savings = (states('input_number.my_electric_rate')|float(0) - states('sensor.american_electric_power_electric_standard_offer')|float(0)) * 1000 %} {% if savings >= 0 %} <font color="green">**${{ '%.2f' | format(savings) }}**</font> {% else %} <font color="red">**${{ '%.2f' | format(savings) }}**</font> {% endif %} |
-  | **Best No-Fee** | **${{ states('sensor.american_electric_power_electric_best_rate_no_fees') }}** <br> _({{ state_attr('sensor.american_electric_power_electric_best_rate_no_fees', 'term_length') }})_ | {% set savings = (states('input_number.my_electric_rate')|float(0) - states('sensor.american_electric_power_electric_best_rate_no_fees')|float(0)) * 1000 %} {% if savings >= 0 %} <font color="green">**${{ '%.2f' | format(savings) }}**</font> {% else %} <font color="red">**${{ '%.2f' | format(savings) }}**</font> {% endif %} |
-
-  _<small> *Savings if you switch (based on 1000 kWh/mo) </small>_
-title: Savings Calculator
-
-
-{% endraw %}
-
-> Note: Ensure your sensor entity IDs match those in the code above. They may vary slightly based on the Utility Provider you selected during setup.
-
-🔔 Automation Example
-
-Get a notification on your phone when a "No-Fee" plan appears that is cheaper than your current contract.
-
-{% raw %}
-
-alias: "💰 Energy Savings Alert"
-trigger:
-  - platform: state
-    entity_id:
-      - sensor.american_electric_power_electric_best_rate_no_fees
-      - sensor.columbia_gas_of_ohio_naturalgas_best_rate_no_fees
-condition:
-  - condition: or
-    conditions:
-      - condition: template
-        value_template: >
-          {{ states('sensor.american_electric_power_electric_best_rate_no_fees')|float(0) < states('input_number.my_electric_rate')|float(0) }}
-      - condition: template
-        value_template: >
-          {{ states('sensor.columbia_gas_of_ohio_naturalgas_best_rate_no_fees')|float(0) < states('input_number.my_gas_rate')|float(0) }}
-action:
-  - service: notify.mobile_app_your_phone
-    data:
-      title: "📉 Cheaper Energy Rate Found!"
-      message: "A new energy rate is available that beats your current contract!"
-
-
-{% endraw %}
-
-⚠️ Disclaimer
-
-This integration is not affiliated with the Public Utilities Commission of Ohio (PUCO). It scrapes data from the public energychoice.ohio.gov website. While efforts are made to ensure accuracy, always verify rates on the official website before signing a contract.
-
-📄 License
+## **📄 License**
 
 MIT License
 

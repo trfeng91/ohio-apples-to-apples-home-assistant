@@ -1,0 +1,20 @@
+alias: "Energy Savings Alert"
+trigger:
+  - platform: state
+    entity_id:
+      - sensor.american_electric_power_electric_best_rate_no_fees
+      - sensor.columbia_gas_of_ohio_naturalgas_best_rate_no_fees
+condition:
+  - condition: or
+    conditions:
+      - condition: template
+        value_template: >
+          {{ states('sensor.american_electric_power_electric_best_rate_no_fees')|float(0) < states('input_number.my_electric_rate')|float(0) }}
+      - condition: template
+        value_template: >
+          {{ states('sensor.columbia_gas_of_ohio_naturalgas_best_rate_no_fees')|float(0) < states('input_number.my_gas_rate')|float(0) }}
+action:
+  - service: notify.mobile_app_your_phone
+    data:
+      title: "📉 Cheaper Energy Rate Found!"
+      message: "A new energy rate is available that beats your current contract!"
