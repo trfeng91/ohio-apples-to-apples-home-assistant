@@ -69,7 +69,7 @@ For the card to calculate savings, it needs to know your *current* contract pric
 
 ### **Step 2: Add the Card**
 
-1. Open the card configuration file: [**energy\_savings\_card.txt**](https://www.google.com/search?q=card/energy_savings_card.txt)  
+1. Open the card configuration file: **energy\_savings\_card.txt**  
 2. Copy all the code inside that file.  
 3. In Home Assistant, go to your Dashboard and click the **Pencil Icon** (Edit Dashboard).  
 4. Click **\+ Add Card**.  
@@ -83,7 +83,7 @@ For the card to calculate savings, it needs to know your *current* contract pric
 
 Receive a notification on your phone whenever a "No-Fee" plan appears that is cheaper than your current contract.
 
-1. Open the automation configuration file: [**energy\_savings\_alert.txt**](https://www.google.com/search?q=card/energy_savings_alert.txt)  
+1. Open the automation configuration file: **energy\_savings\_alert.txt**  
 2. Copy all the code inside that file.  
 3. In Home Assistant, go to **Settings** \> **Automations & Scenes**.  
 4. Click **\+ Create Automation** \> **Create new automation**.  
