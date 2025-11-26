@@ -14,7 +14,7 @@ condition:
         value_template: >
           {{ states('sensor.columbia_gas_of_ohio_naturalgas_best_rate_no_fees')|float(0) < states('input_number.my_gas_rate')|float(0) }}
 action:
-  - service: notify.mobile_app_your_phone
+  - action: notify.mobile_app_your_phone   # Replace with your actual device name
     data:
       title: "📉 Cheaper Energy Rate Found!"
       message: "A new energy rate is available that beats your current contract!"
