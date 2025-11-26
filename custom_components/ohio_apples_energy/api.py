@@ -133,7 +133,7 @@ class OhioApplesApi:
                             elif rate_type_filter == "Variable":
                                 if "variable" not in rate_type_lower or "fixed" in rate_type_lower:
                                     continue
-
+                        
                         if filters.get("term_min") is not None and term_val < filters["term_min"]: continue
                         if filters.get('term_max') is not None and term_val > filters['term_max']: continue
                         if filters.get('price_max') is not None and filters['price_max'] > 0.0:
