@@ -6,11 +6,12 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
+    UpdateFailed,
 )
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import *
-from .utils import fetch_rates
+from .api import OhioApplesApi
+from .exceptions import CannotConnect, NoDataAvailable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,22 +19,49 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass, entry, async_add_entities):
     """Setup sensor platform."""
 
-    session = async_get_clientsession(hass)
+    api = hass.data[DOMAIN][entry.entry_id]
     category = entry.data[CONF_CATEGORY]
     territory_id = entry.data[CONF_TERRITORY_ID]
-    refresh_hours = entry.data.get(CONF_REFRESH_INTERVAL, 12)
 
+    # Get options from config entry
+    refresh_hours = entry.options.get(CONF_REFRESH_INTERVAL, 12)
     filters = {
-        "rate_type": entry.data.get(CONF_RATE_TYPE, "All"),
-        "term_min": entry.data.get(CONF_TERM_MIN),
-        "term_max": entry.data.get(CONF_TERM_MAX),
-        "price_max": entry.data.get(CONF_PRICE_MAX),
+        "rate_type": entry.options.get(CONF_RATE_TYPE, "All"),
+        "term_min": entry.options.get(CONF_TERM_MIN),
+        "term_max": entry.options.get(CONF_TERM_MAX),
+        "price_max": entry.options.get(CONF_PRICE_MAX),
     }
 
     async def async_update_data():
-        """Fetch data from API."""
-        async with async_timeout.timeout(30):
-            return await fetch_rates(session, category, territory_id, filters)
+        """Fetch data from API and process it."""
+        try:
+            async with async_timeout.timeout(30):
+                data = await api.async_fetch_rates(category, territory_id, filters)
+        except (CannotConnect, NoDataAvailable) as e:
+            raise UpdateFailed(f"Error communicating with API: {e}") from e
+
+        # Process rates once
+        processed_data = {
+            "standard_offer": data["standard_offer"],
+            "rates": data["rates"],
+            "best_rate": data["rates"][0] if data["rates"] else None,
+            "best_rate_no_fees": next(
+                (
+                    rate
+                    for rate in data["rates"]
+                    if rate["monthly_fee"] == 0
+                    and rate["early_term_fee"] == 0
+                    and not rate["intro_price"]
+                ),
+                None,
+            ),
+        }
+        for term in [0, 1, 2, 3, 6, 9, 12, 18, 24, 36, 48, 60]:
+            processed_data[f"best_rate_{term}mo"] = next(
+                (rate for rate in data["rates"] if rate["term"] == term), None
+            )
+
+        return processed_data
 
     coordinator = DataUpdateCoordinator(
         hass,
@@ -68,9 +96,14 @@ class BaseOhioSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._name = name
         self._category = category
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, self.coordinator.name)},
+            "name": self._name,
+            "manufacturer": "Ohio Apples to Apples",
+        }
 
     @property
-    def unit_of_measurement(self):
+    def native_unit_of_measurement(self):
         if self._category == "Electric":
             return "$/kWh"
         return "$/ccf"
@@ -81,6 +114,8 @@ class BaseOhioSensor(CoordinatorEntity, SensorEntity):
 
     def _get_attributes(self, rate):
         """Helper to format attributes for a rate."""
+        if not rate:
+            return {}
         return {
             "supplier": rate['supplier'],
             "rate_type": rate['type'],
@@ -104,15 +139,13 @@ class BestRateSensor(BaseOhioSensor):
         return f"{self.coordinator.name}_best_rate"
 
     @property
-    def state(self):
-        rates = self.coordinator.data.get("rates", [])
-        return rates[0]['price'] if rates else None
+    def native_value(self):
+        rate = self.coordinator.data.get("best_rate")
+        return rate["price"] if rate else None
 
     @property
     def extra_state_attributes(self):
-        rates = self.coordinator.data.get("rates", [])
-        if not rates: return {}
-        return self._get_attributes(rates[0])
+        return self._get_attributes(self.coordinator.data.get("best_rate"))
 
 
 class BestRateNoFeesSensor(BaseOhioSensor):
@@ -127,24 +160,13 @@ class BestRateNoFeesSensor(BaseOhioSensor):
         return f"{self.coordinator.name}_best_rate_no_fees"
 
     @property
-    def state(self):
-        rates = self.coordinator.data.get("rates", [])
-        for rate in rates:
-            if (rate['monthly_fee'] == 0 and
-                    rate['early_term_fee'] == 0 and
-                    not rate['intro_price']):
-                return rate['price']
-        return None
+    def native_value(self):
+        rate = self.coordinator.data.get("best_rate_no_fees")
+        return rate["price"] if rate else None
 
     @property
     def extra_state_attributes(self):
-        rates = self.coordinator.data.get("rates", [])
-        for rate in rates:
-            if (rate['monthly_fee'] == 0 and
-                    rate['early_term_fee'] == 0 and
-                    not rate['intro_price']):
-                return self._get_attributes(rate)
-        return {}
+        return self._get_attributes(self.coordinator.data.get("best_rate_no_fees"))
 
 
 class TermRateSensor(BaseOhioSensor):
@@ -163,26 +185,27 @@ class TermRateSensor(BaseOhioSensor):
         return f"{self.coordinator.name}_best_rate_{self._term}mo"
 
     @property
-    def state(self):
-        rates = self.coordinator.data.get("rates", [])
-        for rate in rates:
-            if rate['term'] == self._term:
-                return rate['price']
-        return None
+    def native_value(self):
+        rate = self.coordinator.data.get(f"best_rate_{self._term}mo")
+        return rate["price"] if rate else None
 
     @property
     def extra_state_attributes(self):
-        rates = self.coordinator.data.get("rates", [])
-        for rate in rates:
-            if rate['term'] == self._term:
-                return self._get_attributes(rate)
-        return {}
+        return self._get_attributes(self.coordinator.data.get(f"best_rate_{self._term}mo"))
 
 
 class RateCountSensor(CoordinatorEntity, SensorEntity):
+    """Sensor for the number of matching offers."""
+
     def __init__(self, coordinator, name, category):
         super().__init__(coordinator)
         self._name = name
+        self._category = category
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, self.coordinator.name)},
+            "name": self._name,
+            "manufacturer": "Ohio Apples to Apples",
+        }
 
     @property
     def name(self): return f"{self._name} Matching Offers"
@@ -191,7 +214,7 @@ class RateCountSensor(CoordinatorEntity, SensorEntity):
     def unique_id(self): return f"{self.coordinator.name}_rate_count"
 
     @property
-    def state(self): return len(self.coordinator.data.get("rates", []))
+    def native_value(self): return len(self.coordinator.data.get("rates", []))
 
 
 class StandardOfferSensor(BaseOhioSensor):
@@ -204,7 +227,7 @@ class StandardOfferSensor(BaseOhioSensor):
     def unique_id(self): return f"{self.coordinator.name}_standard_offer"
 
     @property
-    def state(self): return self.coordinator.data.get("standard_offer")
+    def native_value(self): return self.coordinator.data.get("standard_offer")
 
     @property
     def icon(self): return "mdi:bank"
