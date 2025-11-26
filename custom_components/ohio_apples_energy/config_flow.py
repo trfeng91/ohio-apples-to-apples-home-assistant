@@ -1,10 +1,17 @@
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 from .const import *
-from .utils import fetch_providers
+from .api import OhioApplesApi
+from .exceptions import CannotConnect, NoDataAvailable
 
 
 class OhioApplesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -15,6 +22,11 @@ class OhioApplesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self):
         self.data = {}
         self.providers = {}
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return OhioApplesOptionsFlow(config_entry)
 
     async def async_step_user(self, user_input=None):
         """Step 1: Select Category (Gas or Electric)."""
@@ -37,25 +49,38 @@ class OhioApplesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         url = URL_ELEC_PROVIDERS if self.data[CONF_CATEGORY] == CATEGORY_ELECTRIC else URL_GAS_PROVIDERS
 
-        if not self.providers:
-            session = async_get_clientsession(self.hass)
-            self.providers = await fetch_providers(session, url)
-
-        if not self.providers:
-            return self.async_abort(reason="cannot_fetch_providers")
+        try:
+            if not self.providers:
+                session = async_get_clientsession(self.hass)
+                api = OhioApplesApi(session)
+                self.providers = await api.async_fetch_providers(url)
+        except CannotConnect:
+            errors["base"] = "cannot_connect"
+        except NoDataAvailable:
+            errors["base"] = "no_data_available"
 
         if user_input is not None:
             self.data[CONF_TERRITORY_ID] = user_input[CONF_TERRITORY_ID]
             self.data[CONF_TERRITORY_NAME] = self.providers[user_input[CONF_TERRITORY_ID]]
             return await self.async_step_filters()
 
-        provider_options = {k: v for k, v in sorted(self.providers.items(), key=lambda item: item[1])}
+        provider_options = [
+            {"label": v, "value": k}
+            for k, v in sorted(self.providers.items(), key=lambda item: item[1])
+        ]
 
         return self.async_show_form(
             step_id="provider",
-            data_schema=vol.Schema({
-                vol.Required(CONF_TERRITORY_ID): vol.In(provider_options)
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_TERRITORY_ID): SelectSelector(
+                        SelectSelectorConfig(
+                            options=provider_options,
+                            mode=SelectSelectorMode.DROPDOWN,
+                        )
+                    ),
+                }
+            ),
             errors=errors,
         )
 
@@ -81,8 +106,46 @@ class OhioApplesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({
                 vol.Required(CONF_REFRESH_INTERVAL, default=12): vol.All(vol.Coerce(int), vol.Range(min=1, max=168)),
                 vol.Optional(CONF_RATE_TYPE, default="All"): vol.In(["All", "Fixed", "Variable"]),
-                vol.Optional(CONF_TERM_MIN): vol.Any(None, int),
-                vol.Optional(CONF_TERM_MAX): vol.Any(None, int),
+                vol.Optional(CONF_TERM_MIN): cv.positive_int,
+                vol.Optional(CONF_TERM_MAX): cv.positive_int,
                 vol.Optional(CONF_PRICE_MAX): vol.Any(None, vol.Coerce(float)),
             })
+        )
+
+
+class OhioApplesOptionsFlow(config_entries.OptionsFlow):
+    """Handle an options flow for Ohio Apples Energy."""
+
+    def __init__(self, config_entry):
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None):
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({
+                vol.Required(
+                    CONF_REFRESH_INTERVAL,
+                    default=self.config_entry.options.get(CONF_REFRESH_INTERVAL, 12),
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=168)),
+                vol.Optional(
+                    CONF_RATE_TYPE,
+                    default=self.config_entry.options.get(CONF_RATE_TYPE, "All"),
+                ): vol.In(["All", "Fixed", "Variable"]),
+                vol.Optional(
+                    CONF_TERM_MIN,
+                    default=self.config_entry.options.get(CONF_TERM_MIN),
+                ): cv.positive_int,
+                vol.Optional(
+                    CONF_TERM_MAX,
+                    default=self.config_entry.options.get(CONF_TERM_MAX),
+                ): cv.positive_int,
+                vol.Optional(
+                    CONF_PRICE_MAX,
+                    default=self.config_entry.options.get(CONF_PRICE_MAX),
+                ): vol.Any(None, vol.Coerce(float)),
+            }),
         )
