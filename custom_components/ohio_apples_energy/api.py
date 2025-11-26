@@ -124,11 +124,17 @@ class OhioApplesApi:
                             fee_val = float(fee_match.group(1))
 
                         # --- FILTERS ---
-                        if filters.get('rate_type') and filters['rate_type'] != 'All':
-                            if filters['rate_type'].lower() not in rate_type.lower():
-                                continue
-
-                        if filters.get('term_min') is not None and term_val < filters['term_min']: continue
+                        rate_type_filter = filters.get("rate_type")
+                        if rate_type_filter and rate_type_filter != "All":
+                            rate_type_lower = rate_type.lower()
+                            if rate_type_filter == "Fixed":
+                                if "fixed" not in rate_type_lower or "variable" in rate_type_lower:
+                                    continue
+                            elif rate_type_filter == "Variable":
+                                if "variable" not in rate_type_lower or "fixed" in rate_type_lower:
+                                    continue
+                        
+                        if filters.get("term_min") is not None and term_val < filters["term_min"]: continue
                         if filters.get('term_max') is not None and term_val > filters['term_max']: continue
                         if filters.get('price_max') is not None and filters['price_max'] > 0.0:
                             if price_val > filters['price_max']: continue
