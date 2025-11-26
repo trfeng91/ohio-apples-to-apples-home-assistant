@@ -23,13 +23,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
     category = entry.data[CONF_CATEGORY]
     territory_id = entry.data[CONF_TERRITORY_ID]
 
-    # Get options from config entry
-    refresh_hours = entry.options.get(CONF_REFRESH_INTERVAL, 12)
+# Get options from config entry, falling back to data (initial setup)
+    refresh_hours = entry.options.get(CONF_REFRESH_INTERVAL, entry.data.get(CONF_REFRESH_INTERVAL, 12))
+    
     filters = {
-        "rate_type": entry.options.get(CONF_RATE_TYPE, "All"),
-        "term_min": entry.options.get(CONF_TERM_MIN),
-        "term_max": entry.options.get(CONF_TERM_MAX),
-        "price_max": entry.options.get(CONF_PRICE_MAX),
+        "rate_type": entry.options.get(CONF_RATE_TYPE, entry.data.get(CONF_RATE_TYPE, "All")),
+        "term_min": entry.options.get(CONF_TERM_MIN, entry.data.get(CONF_TERM_MIN)),
+        "term_max": entry.options.get(CONF_TERM_MAX, entry.data.get(CONF_TERM_MAX)),
+        "price_max": entry.options.get(CONF_PRICE_MAX, entry.data.get(CONF_PRICE_MAX)),
     }
 
     async def async_update_data():
