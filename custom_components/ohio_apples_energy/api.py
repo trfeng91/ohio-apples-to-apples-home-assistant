@@ -1,4 +1,5 @@
 """API for Ohio Apples to Apples Energy."""
+import asyncio
 import logging
 import re
 import aiohttp
@@ -43,6 +44,10 @@ class OhioApplesApi:
 
                 return providers
         except aiohttp.ClientError as e:
+            _LOGGER.error("Failed to fetch providers from %s: %s", category_url, e)
+            raise CannotConnect from e
+        except asyncio.TimeoutError as e:
+            _LOGGER.error("Timed out fetching providers from %s", category_url)
             raise CannotConnect from e
 
     async def async_fetch_rates(self, category: str, territory_id: str, filters: dict) -> dict:
@@ -160,4 +165,8 @@ class OhioApplesApi:
                 return {"rates": rates, "standard_offer": standard_offer}
 
         except aiohttp.ClientError as e:
+            _LOGGER.error("Failed to fetch rates from %s: %s", url, e)
+            raise CannotConnect from e
+        except asyncio.TimeoutError as e:
+            _LOGGER.error("Timed out fetching rates from %s", url)
             raise CannotConnect from e
