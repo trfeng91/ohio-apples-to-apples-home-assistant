@@ -36,7 +36,11 @@ async def async_setup(hass: HomeAssistant, config: dict):
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up Ohio Apples Energy from a config entry."""
-    session = async_get_clientsession(hass)
+    # energychoice.ohio.gov only serves the leaf cert — its Sectigo intermediate
+    # is never sent, so default TLS verification fails. Browsers paper over this
+    # with AIA chasing; aiohttp does not. The data is a public rate listing, so
+    # verify_ssl=False is an acceptable tradeoff here.
+    session = async_get_clientsession(hass, verify_ssl=False)
     api = OhioApplesApi(session)
 
     category = entry.data[CONF_CATEGORY]

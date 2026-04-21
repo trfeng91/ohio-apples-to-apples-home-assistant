@@ -51,7 +51,7 @@ class OhioApplesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             if not self.providers:
-                session = async_get_clientsession(self.hass)
+                session = async_get_clientsession(self.hass, verify_ssl=False)
                 api = OhioApplesApi(session)
                 self.providers = await api.async_fetch_providers(url)
         except CannotConnect:
