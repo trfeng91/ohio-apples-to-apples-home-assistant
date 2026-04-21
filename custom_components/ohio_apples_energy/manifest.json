@@ -6,5 +6,5 @@
   "documentation": "https://github.com/trfeng91/ohio-apples-to-apples-home-assistant",
   "requirements": ["beautifulsoup4>=4.0.0"],
   "iot_class": "cloud_polling",
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

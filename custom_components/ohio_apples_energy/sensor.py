@@ -1,90 +1,29 @@
-from datetime import timedelta
+"""Sensor platform for Ohio Apples Energy."""
 import logging
-import async_timeout
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator,
-    UpdateFailed,
-)
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import *
-from .api import OhioApplesApi
-from .exceptions import CannotConnect, NoDataAvailable
+from .const import CONF_CATEGORY, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+TERMS_TO_TRACK = [0, 1, 2, 3, 6, 9, 12, 18, 24, 36, 48, 60]
+
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Setup sensor platform."""
-
-    api = hass.data[DOMAIN][entry.entry_id]
+    """Set up sensor platform."""
+    coordinator = hass.data[DOMAIN][entry.entry_id]
     category = entry.data[CONF_CATEGORY]
-    territory_id = entry.data[CONF_TERRITORY_ID]
-
-# Get options from config entry, falling back to data (initial setup)
-    refresh_hours = entry.options.get(CONF_REFRESH_INTERVAL, entry.data.get(CONF_REFRESH_INTERVAL, 12))
-    
-    filters = {
-        "rate_type": entry.options.get(CONF_RATE_TYPE, entry.data.get(CONF_RATE_TYPE, "All")),
-        "term_min": entry.options.get(CONF_TERM_MIN, entry.data.get(CONF_TERM_MIN)),
-        "term_max": entry.options.get(CONF_TERM_MAX, entry.data.get(CONF_TERM_MAX)),
-        "price_max": entry.options.get(CONF_PRICE_MAX, entry.data.get(CONF_PRICE_MAX)),
-    }
-
-    async def async_update_data():
-        """Fetch data from API and process it."""
-        try:
-            async with async_timeout.timeout(30):
-                data = await api.async_fetch_rates(category, territory_id, filters)
-        except (CannotConnect, NoDataAvailable) as e:
-            raise UpdateFailed(f"Error communicating with API: {e}") from e
-
-        # Process rates once
-        processed_data = {
-            "standard_offer": data["standard_offer"],
-            "rates": data["rates"],
-            "best_rate": data["rates"][0] if data["rates"] else None,
-            "best_rate_no_fees": next(
-                (
-                    rate
-                    for rate in data["rates"]
-                    if rate["monthly_fee"] == 0
-                    and rate["early_term_fee"] == 0
-                    and not rate["intro_price"]
-                ),
-                None,
-            ),
-        }
-        for term in [0, 1, 2, 3, 6, 9, 12, 18, 24, 36, 48, 60]:
-            processed_data[f"best_rate_{term}mo"] = next(
-                (rate for rate in data["rates"] if rate["term"] == term), None
-            )
-
-        return processed_data
-
-    coordinator = DataUpdateCoordinator(
-        hass,
-        _LOGGER,
-        name=f"Ohio Energy {category} Scraper",
-        update_method=async_update_data,
-        update_interval=timedelta(hours=refresh_hours),
-    )
-
-    await coordinator.async_config_entry_first_refresh()
 
     entities = [
         BestRateSensor(coordinator, entry.title, category),
         RateCountSensor(coordinator, entry.title, category),
         StandardOfferSensor(coordinator, entry.title, category),
-        BestRateNoFeesSensor(coordinator, entry.title, category)
+        BestRateNoFeesSensor(coordinator, entry.title, category),
     ]
 
-    # Added 60 months to the list
-    terms_to_track = [0, 1, 2, 3, 6, 9, 12, 18, 24, 36, 48, 60]
-
-    for term in terms_to_track:
+    for term in TERMS_TO_TRACK:
         entities.append(TermRateSensor(coordinator, entry.title, category, term))
 
     async_add_entities(entities)
